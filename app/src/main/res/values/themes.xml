@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.ArCloudAnchorSample" parent="Theme.MaterialComponents.NoActionBar">
+    <style name="MuseMagic" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/sceneview</item>
         <item name="colorAccent">@color/sceneview</item>
         <item name="colorPrimaryDark">@android:color/transparent</item>

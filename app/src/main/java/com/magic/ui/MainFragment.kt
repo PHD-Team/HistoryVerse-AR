@@ -1,5 +1,6 @@
 package com.magic.ui
 
+import ObjectDetector
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -17,12 +18,16 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.ar.core.Anchor
+import com.google.ar.core.Frame
 import com.google.ar.core.Pose
+import com.google.ar.core.exceptions.NotYetAvailableException
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
+import io.github.sceneview.light.position
+import io.github.sceneview.utils.FrameTime
 import io.github.sceneview.utils.doOnApplyWindowInsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -73,9 +78,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             sceneView.isDepthOcclusionEnabled = true
             cloudAnchorEnabled = true
             // Move the instructions up to avoid an overlap with the buttons
-            instructions.searchPlaneInfoNode.position.y = -0.5f
+            planeFindingMode.ordinal.position.y = -0.5f
         }
-
         loadingView = view.findViewById(R.id.loadingView)
 
         actionButton = view.findViewById(R.id.actionButton)
@@ -102,13 +106,11 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             actionButton.isVisible = true
         }
         isLoading = true
-        cloudAnchorNode = ArModelNode(placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
+        cloudAnchorNode = ArModelNode(engine = sceneView.engine, placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
             parent = sceneView
             isSmoothPoseEnable = false
             isVisible = false
             loadModelGlbAsync(
-                context = requireContext(),
-                lifecycle = lifecycle,
                 glbFileLocation = "models/mainModelTempProjects.glb",
                 scaleToUnits = 0.7f,
                 autoAnimate = true,
@@ -116,13 +118,11 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 isLoading = false
             }
         }
-        checkPointAnchorNode = ArModelNode(placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
+        checkPointAnchorNode = ArModelNode(engine = sceneView.engine , placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
             parent = sceneView
             isSmoothPoseEnable = false
             isVisible = false
             loadModelGlbAsync(
-                context = requireContext(),
-                lifecycle = lifecycle,
                 glbFileLocation = "models/mainModelTempProjects.glb",
                 scaleToUnits = 0.7f,
                 autoAnimate = true,
@@ -130,14 +130,29 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 isLoading = false
             }
         }
+        resolveAnchor()
         lifecycleScope.launch(Dispatchers.Main) {
             delay(2000)
             playAudio(R.raw.welcome, welcomeAudio)
             delay(3000)
             cardView.isVisible = true
         }
-    }
+        val session = sceneView.arSession
+        session?.update(FrameTime(10000))?.let { frame ->
+            Log.i("ssssssss",frame.frame.acquireCameraImage().height.toString())
+            val dd = ObjectDetector(image = frame.frame.acquireCameraImage()) {
+                Toast.makeText(
+                    requireContext(),
+                    "tracking ${it.trackingId}  ${it.labels[0].text}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                Log.e("tracking", it.trackingId.toString())
 
+            }
+            dd.useCustomObjectDetector()
+        }
+
+    }
     private fun actionButtonClicked() {
         when (mode) {
             Mode.HOME -> {
@@ -261,12 +276,15 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 for (document in result) {
                     Log.d(TAG, "${document.id} => ${document.data}")
                 }
-                editText.setText(result.documents[1].data.toString())
+                val anchorFromFireBase = result.documents[1].data?.get("anchor").toString()
+                editText.setText(anchorFromFireBase)
+                Toast.makeText(requireContext(),anchorFromFireBase, Toast.LENGTH_LONG).show()
             }
             .addOnFailureListener { exception ->
                 Log.w(TAG, "Error getting documents.", exception)
             }
     }
+// The `use` block ensures the camera image is disposed of after use.
 
     private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
         mediaPlayer.setDataSource(

@@ -1,3 +1,5 @@
+package com.magic.ui.utils
+
 class Constants {
 
     companion object{

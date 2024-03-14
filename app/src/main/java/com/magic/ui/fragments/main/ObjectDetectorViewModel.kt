@@ -1,6 +1,6 @@
-package com.magic.ui
+package com.magic.ui.fragments.main
 
-import ObjectDetector
+import com.magic.ui.utils.ObjectDetector
 import androidx.lifecycle.ViewModel
 
 

@@ -1,6 +1,6 @@
-package com.magic.ui
+package com.magic.ui.fragments.main
 
-import ObjectDetector
+import com.magic.ui.utils.ObjectDetector
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -18,11 +18,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.ar.core.Anchor
-import com.google.ar.core.Frame
 import com.google.ar.core.Pose
-import com.google.ar.core.exceptions.NotYetAvailableException
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.magic.ui.R
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode

@@ -1,3 +1,6 @@
+package com.magic.ui.utils
+
+import IdAnalyzer
 import android.media.Image
 import android.util.Log
 import com.google.mlkit.common.model.LocalModel

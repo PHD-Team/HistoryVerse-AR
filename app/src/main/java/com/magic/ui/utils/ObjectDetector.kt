@@ -1,6 +1,5 @@
 package com.magic.ui.utils
 
-import IdAnalyzer
 import android.media.Image
 import android.util.Log
 import com.google.mlkit.common.model.LocalModel
@@ -12,7 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 
-class ObjectDetector(private val image: Image, private val idAnalyzer: IdAnalyzer) {
+class ObjectDetector(private val image: Image) {
     private var job: Job? = null
 
     private val localModel by lazy {
@@ -44,11 +43,6 @@ class ObjectDetector(private val image: Image, private val idAnalyzer: IdAnalyze
                     Constants.iscRunning = true
                     Log.e("labels", "${results.size}")
 
-                    results?.forEach {
-                        if (it.labels.size > 0) {
-                            idAnalyzer(it)
-                        }
-                    }
                 } catch (e: Exception) {
                     Constants.iscRunning = false
                     e.printStackTrace()

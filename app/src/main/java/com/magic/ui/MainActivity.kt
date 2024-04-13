@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.commit
-import com.magic.ui.fragments.Test
+import com.magic.ui.fragments.main.ModelFragment
 import io.github.sceneview.utils.doOnApplyWindowInsets
 import io.github.sceneview.utils.setFullScreen
 
@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         })
 
         supportFragmentManager.commit {
-            add(R.id.containerFragment, Test::class.java, Bundle())
+            add(R.id.containerFragment, ModelFragment::class.java, Bundle())
         }
     }
 }

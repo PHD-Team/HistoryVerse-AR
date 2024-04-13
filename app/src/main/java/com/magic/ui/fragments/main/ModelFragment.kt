@@ -1,6 +1,5 @@
 package com.magic.ui.fragments.main
 
-import com.magic.ui.utils.ObjectDetector
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -19,20 +18,18 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.ar.core.Anchor
 import com.google.ar.core.Pose
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.light.position
-import io.github.sceneview.utils.FrameTime
 import io.github.sceneview.utils.doOnApplyWindowInsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class MainFragment : Fragment(R.layout.fragment_main) {
+class ModelFragment : Fragment(R.layout.fragment_model) {
     private lateinit var sceneView: ArSceneView
     private lateinit var loadingView: View
     private lateinit var cardView: View
@@ -41,11 +38,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
     private lateinit var skipButton: Button
     private lateinit var actionButton: ExtendedFloatingActionButton
     private lateinit var cloudAnchorNode: ArModelNode
-    private lateinit var checkPointAnchorNode: ArModelNode
     private val firstKitAudio = MediaPlayer()
     private val welcomeAudio = MediaPlayer()
-    private val db = Firebase.firestore
     private var mode = Mode.HOME
+    private val repository = MuseMagicRepositoryImpl()
 
     private var isLoading = false
         set(value) {
@@ -84,7 +80,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         actionButton = view.findViewById(R.id.actionButton)
         actionButton.setOnClickListener {
             selectMode(Mode.RESOLVE)
-            resolveAnchor()
+            lifecycleScope.launch {
+                getAnchorId()
+            }
+
             actionButtonClicked()
         }
 
@@ -117,38 +116,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 isLoading = false
             }
         }
-        checkPointAnchorNode = ArModelNode(engine = sceneView.engine , placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
-            parent = sceneView
-            isSmoothPoseEnable = false
-            isVisible = false
-            loadModelGlbAsync(
-                glbFileLocation = "models/mainModelTempProjects.glb",
-                scaleToUnits = 0.7f,
-                autoAnimate = true,
-            ) {
-                isLoading = false
-            }
-        }
-        resolveAnchor()
+
         lifecycleScope.launch(Dispatchers.Main) {
             delay(2000)
             playAudio(R.raw.welcome, welcomeAudio)
             delay(3000)
             cardView.isVisible = true
-        }
-        val session = sceneView.arSession
-        session?.update(FrameTime(10000))?.let { frame ->
-            Log.i("ssssssss",frame.frame.acquireCameraImage().height.toString())
-            val dd = ObjectDetector(image = frame.frame.acquireCameraImage()) {
-                Toast.makeText(
-                    requireContext(),
-                    "tracking ${it.trackingId}  ${it.labels[0].text}",
-                    Toast.LENGTH_SHORT
-                ).show()
-                Log.e("tracking", it.trackingId.toString())
-
-            }
-            dd.useCustomObjectDetector()
         }
 
     }
@@ -267,21 +240,41 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
-
-    private fun resolveAnchor() {
-        db.collection("anchors")
-            .get()
-            .addOnSuccessListener { result ->
-                for (document in result) {
-                    Log.d(TAG, "${document.id} => ${document.data}")
+    private fun resolveAnchor(){
+        cloudAnchorNode.resolveCloudAnchor("ua-4982ca6da00dc1c99e1fbd2a0d880f1f") { anchor: Anchor, success: Boolean ->
+            if (success) {
+                cloudAnchorNode.pose = Pose.IDENTITY
+                cloudAnchorNode.isVisible = true
+                lifecycleScope.launch(Dispatchers.Main) {
+                    delay(500)
+                    playAudio(R.raw.first, firstKitAudio)
                 }
-                val anchorFromFireBase = result.documents[1].data?.get("anchor").toString()
-                editText.setText(anchorFromFireBase)
-                Toast.makeText(requireContext(),anchorFromFireBase, Toast.LENGTH_LONG).show()
+                selectMode(Mode.RESET)
+            } else {
+                Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
+                Log.d(
+                    TAG,
+                    "Unable to resolve the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
+                )
+                selectMode(Mode.RESOLVE)
             }
-            .addOnFailureListener { exception ->
-                Log.w(TAG, "Error getting documents.", exception)
-            }
+        }
+
+        actionButton.apply {
+            setText(R.string.resolving)
+            isEnabled = false
+        }
+    }
+    private fun detachAnchor(){
+        cloudAnchorNode.detachAnchor()
+        selectMode(Mode.HOME)
+    }
+    private suspend fun getAnchorId(){
+        lifecycleScope.launch {
+            val data = repository.getAnchorList()
+            editText.setText(data[1].anchor)
+            Toast.makeText(requireContext(),data[1].anchor, Toast.LENGTH_LONG).show()
+        }
     }
 // The `use` block ensures the camera image is disposed of after use.
 

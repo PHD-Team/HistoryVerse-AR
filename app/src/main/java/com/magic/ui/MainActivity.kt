@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         })
 
         supportFragmentManager.commit {
-            add(R.id.containerFragment, ResolveBotFragment::class.java, Bundle())
+            add(R.id.containerFragment, ModelFragment::class.java, Bundle())
         }
     }
 }

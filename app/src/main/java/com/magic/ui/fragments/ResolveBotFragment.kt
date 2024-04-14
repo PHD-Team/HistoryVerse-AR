@@ -68,12 +68,11 @@ class ResolveBotFragment : Fragment() {
         }
         binding.sceneView.apply {
             planeRenderer.isEnabled = false
-            binding.sceneView.indirectLightEstimated
-            binding.sceneView.planeFindingMode
-            binding.sceneView.isDepthOcclusionEnabled = true
+            indirectLightEstimated
+            planeFindingMode
+            isDepthOcclusionEnabled = true
             cloudAnchorEnabled = true
             // Move the instructions up to avoid an overlap with the buttons
-            planeFindingMode.ordinal.position.y = -0.5f
         }
         binding.skipButton.setOnClickListener {
             binding.cardView.isVisible = false
@@ -89,18 +88,20 @@ class ResolveBotFragment : Fragment() {
             getAnchorId()
             binding.skipButton.isVisible = true
         }
-        cloudAnchorNode = ArModelNode(engine = binding.sceneView.engine, placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
-            parent = binding.sceneView
-            isSmoothPoseEnable = false
-            isVisible = false
-            loadModelGlbAsync(
-                glbFileLocation = "models/mainModelAnimation.glb",
-                scaleToUnits = 0.5f,
-                autoAnimate = true,
-            ) {
-                isLoading = false
+        cloudAnchorNode =
+            ArModelNode(
+                engine = binding.sceneView.engine,
+                placementMode = PlacementMode.PLANE_HORIZONTAL
+            ).apply {
+                parent = binding.sceneView
+                isSmoothPoseEnable = false
+                isVisible = false
+                loadModelGlbAsync(
+                    glbFileLocation = "models/mainModelTempProjects.glb"
+                ) {
+                    isLoading = false
+                }
             }
-        }
         binding.resolveButton.setOnClickListener {
             getModel()
         }
@@ -138,7 +139,6 @@ class ResolveBotFragment : Fragment() {
     private suspend fun resolveAnchor(){
         cloudAnchorNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
             if (success) {
-                cloudAnchorNode.pose = Pose.IDENTITY
                 cloudAnchorNode.isVisible = true
                 lifecycleScope.launch(Dispatchers.Main) {
                     binding.resolveButton.isVisible = false

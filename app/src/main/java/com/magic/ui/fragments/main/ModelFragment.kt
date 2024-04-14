@@ -4,7 +4,9 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -20,6 +22,8 @@ import com.google.ar.core.Anchor
 import com.google.ar.core.Pose
 import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
+import com.magic.ui.databinding.FragmentModelBinding
+import com.magic.ui.databinding.FragmentResolveBotBinding
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
@@ -27,31 +31,34 @@ import io.github.sceneview.light.position
 import io.github.sceneview.utils.doOnApplyWindowInsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 class ModelFragment : Fragment(R.layout.fragment_model) {
-    private lateinit var sceneView: ArSceneView
-    private lateinit var loadingView: View
-    private lateinit var cardView: View
-    private lateinit var editText: EditText
-    private lateinit var resolveButton: Button
-    private lateinit var skipButton: Button
-    private lateinit var actionButton: ExtendedFloatingActionButton
+    private var _binding: FragmentModelBinding? = null
+    private val repository = MuseMagicRepositoryImpl()
     private lateinit var cloudAnchorNode: ArModelNode
     private val firstKitAudio = MediaPlayer()
     private val welcomeAudio = MediaPlayer()
-    private var mode = Mode.HOME
-    private val repository = MuseMagicRepositoryImpl()
-
+    private lateinit var anchorId: String
     private var isLoading = false
         set(value) {
             field = value
-            loadingView.isGone = !value
+            binding.loadingView.isGone = !value
         }
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        // Inflate the layout for this fragment using view binding
+        _binding = FragmentModelBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         val topGuideline = view.findViewById<Guideline>(R.id.topGuideline)
         topGuideline.doOnApplyWindowInsets { systemBarsInsets ->
             // Add the action bar margin
@@ -61,222 +68,55 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
         }
         val bottomGuideline = view.findViewById<Guideline>(R.id.bottomGuideline)
         bottomGuideline.doOnApplyWindowInsets { systemBarsInsets ->
-            // Add the navigation bar margin
             bottomGuideline.setGuidelineEnd(systemBarsInsets.bottom)
         }
-
-        sceneView = view.findViewById(R.id.sceneView)
-        sceneView.apply {
+        binding.sceneView.apply {
             planeRenderer.isEnabled = false
-            sceneView.indirectLightEstimated
-            sceneView.planeFindingMode
-            sceneView.isDepthOcclusionEnabled = true
+            indirectLightEstimated
+            planeFindingMode
+            isDepthOcclusionEnabled = true
             cloudAnchorEnabled = true
             // Move the instructions up to avoid an overlap with the buttons
-            planeFindingMode.ordinal.position.y = -0.5f
         }
-        loadingView = view.findViewById(R.id.loadingView)
-
-        actionButton = view.findViewById(R.id.actionButton)
-        actionButton.setOnClickListener {
-            selectMode(Mode.RESOLVE)
-            lifecycleScope.launch {
-                getAnchorId()
-            }
-
-            actionButtonClicked()
+        binding.skipButton.setOnClickListener {
+            binding.cardView.isVisible = false
+            binding.resolveButton.isVisible = true
         }
-
-        editText = view.findViewById(R.id.editText)
-        editText.addTextChangedListener {
-            actionButton.isEnabled = !it.isNullOrBlank()
-        }
-
-        resolveButton = view.findViewById(R.id.resolveButton)
-        resolveButton.setOnClickListener {
-            selectMode(Mode.RESOLVE)
-        }
-        cardView = view.findViewById(R.id.card_view)
-        skipButton = view.findViewById(R.id.skip_button)
-        skipButton.setOnClickListener {
-            cardView.isVisible = false
-            actionButton.text = "check point"
-            actionButton.isVisible = true
-        }
-        isLoading = true
-        cloudAnchorNode = ArModelNode(engine = sceneView.engine, placementMode = PlacementMode.PLANE_HORIZONTAL).apply {
-            parent = sceneView
-            isSmoothPoseEnable = false
-            isVisible = false
-            loadModelGlbAsync(
-                glbFileLocation = "models/mainModelTempProjects.glb",
-                scaleToUnits = 0.7f,
-                autoAnimate = true,
-            ) {
-                isLoading = false
-            }
-        }
-
         lifecycleScope.launch(Dispatchers.Main) {
-            delay(2000)
+            binding.skipButton.isVisible = false
+            delay(1000)
             playAudio(R.raw.welcome, welcomeAudio)
-            delay(3000)
-            cardView.isVisible = true
+            delay(2000)
+            binding.cardView.isVisible = true
+            delay(1000)
+            getAnchorId()
+            binding.skipButton.isVisible = true
         }
-
-    }
-    private fun actionButtonClicked() {
-        when (mode) {
-            Mode.HOME -> {
-            }
-
-            Mode.HOST -> {
-//                val frame = sceneView.currentFrame ?: return
-//
-//                if (!cloudAnchorNode.isAnchored) {
-//                    cloudAnchorNode.anchor()
-//                }
-//
-//                if (sceneView.arSession?.estimateFeatureMapQualityForHosting(frame.camera.pose) == Session.FeatureMapQuality.INSUFFICIENT) {
-//                    Toast.makeText(context, R.string.insufficient_visual_data, Toast.LENGTH_LONG)
-//                        .show()
-//                    return
-//                }
-//
-//                cloudAnchorNode.hostCloudAnchor { anchor: Anchor, success: Boolean ->
-//                    if (success) {
-//                        editText.setText(anchor.cloudAnchorId)
-//                        selectMode(Mode.RESET)
-//                    } else {
-//                        Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
-//                        Log.d(
-//                            "ZZZZZZZZZZZZ",
-//                            "Unable to host the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
-//                        )
-//                        selectMode(Mode.HOST)
-//                    }
-//                }
-//
-//                actionButton.apply {
-//                    setText(R.string.hosting)
-//                    isEnabled = true
-//                }
-            }
-
-            Mode.RESOLVE -> {
-                cloudAnchorNode.resolveCloudAnchor("ua-4982ca6da00dc1c99e1fbd2a0d880f1f") { anchor: Anchor, success: Boolean ->
-                    if (success) {
-                        cloudAnchorNode.pose = Pose.IDENTITY
-                        cloudAnchorNode.isVisible = true
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            delay(1000)
-                            playAudio(R.raw.first, firstKitAudio)
-                        }
-                        selectMode(Mode.RESET)
-                    } else {
-                        Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
-                        Log.d(
-                            TAG,
-                            "Unable to resolve the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
-                        )
-                        selectMode(Mode.RESOLVE)
-                    }
-                }
-
-                actionButton.apply {
-                    setText(R.string.resolving)
-                    isEnabled = false
+        cloudAnchorNode =
+            ArModelNode(
+                engine = binding.sceneView.engine,
+                placementMode = PlacementMode.PLANE_HORIZONTAL
+            ).apply {
+                parent = binding.sceneView
+                isSmoothPoseEnable = false
+                isVisible = true
+                loadModelGlbAsync(
+                    glbFileLocation = "models/mainModelTempProjects.glb",
+                    scaleToUnits = 0.7f
+                ) {
+                    isLoading = false
                 }
             }
-
-            Mode.RESET -> {
-                cloudAnchorNode.detachAnchor()
-                selectMode(Mode.HOME)
-            }
+        binding.resolveButton.setOnClickListener {
+            getModel()
         }
     }
 
-    private fun selectMode(mode: Mode) {
-        this.mode = mode
-
-        when (mode) {
-            Mode.HOME -> {
-                editText.isVisible = false
-                resolveButton.isVisible = true
-                actionButton.isVisible = false
-                cloudAnchorNode.isVisible = false
-            }
-
-            Mode.HOST -> {
-                resolveButton.isVisible = false
-                actionButton.apply {
-                    setIconResource(R.drawable.ic_host)
-                    setText(R.string.host)
-                    isVisible = true
-                    isEnabled = true
-                }
-                cloudAnchorNode.isVisible = true
-            }
-
-            Mode.RESOLVE -> {
-                editText.isVisible = true
-                resolveButton.isVisible = false
-                actionButton.apply {
-                    setIconResource(R.drawable.ic_resolve)
-                    setText(R.string.resolve)
-                    isVisible = true
-                    isEnabled = editText.text.isNotEmpty()
-                }
-            }
-
-            Mode.RESET -> {
-                editText.isVisible = true
-                actionButton.apply {
-                    setIconResource(R.drawable.ic_reset)
-                    setText(R.string.reset)
-                    isEnabled = true
-                }
-            }
-        }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        detachAnchor()
     }
-
-    private fun resolveAnchor(){
-        cloudAnchorNode.resolveCloudAnchor("ua-4982ca6da00dc1c99e1fbd2a0d880f1f") { anchor: Anchor, success: Boolean ->
-            if (success) {
-                cloudAnchorNode.pose = Pose.IDENTITY
-                cloudAnchorNode.isVisible = true
-                lifecycleScope.launch(Dispatchers.Main) {
-                    delay(500)
-                    playAudio(R.raw.first, firstKitAudio)
-                }
-                selectMode(Mode.RESET)
-            } else {
-                Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
-                Log.d(
-                    TAG,
-                    "Unable to resolve the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
-                )
-                selectMode(Mode.RESOLVE)
-            }
-        }
-
-        actionButton.apply {
-            setText(R.string.resolving)
-            isEnabled = false
-        }
-    }
-    private fun detachAnchor(){
-        cloudAnchorNode.detachAnchor()
-        selectMode(Mode.HOME)
-    }
-    private suspend fun getAnchorId(){
-        lifecycleScope.launch {
-            val data = repository.getAnchorList()
-            editText.setText(data[1].anchor)
-            Toast.makeText(requireContext(),data[1].anchor, Toast.LENGTH_LONG).show()
-        }
-    }
-// The `use` block ensures the camera image is disposed of after use.
 
     private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
         mediaPlayer.setDataSource(
@@ -287,11 +127,52 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
         mediaPlayer.start()
     }
 
-    private enum class Mode {
-        HOME, HOST, RESOLVE, RESET
+    private fun getModel() {
+        lifecycleScope.launch {
+            val getAnchorId = launch {
+                isLoading = true
+                getAnchorId()
+            }
+            joinAll(getAnchorId)
+            launch {
+                resolveAnchor()
+            }
+        }
+
     }
 
-    companion object {
-        private const val TAG = "MainFragment"
+    private suspend fun resolveAnchor(){
+        cloudAnchorNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+            if (success) {
+                cloudAnchorNode.isVisible = true
+                lifecycleScope.launch(Dispatchers.Main) {
+                    binding.resolveButton.isVisible = false
+                    delay(1000)
+                    playAudio(R.raw.first, firstKitAudio)
+                }
+            } else {
+                Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
+                Log.d(
+                    "ResolveBotFragment",
+                    "Unable to resolve the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
+                )
+            }
+        }
     }
+
+    private fun detachAnchor() {
+        cloudAnchorNode.detachAnchor()
+    }
+
+    private suspend fun getAnchorId() {
+        lifecycleScope.launch {
+            isLoading = true
+            val data = repository.getAnchorList()
+            isLoading = data.isEmpty()
+            anchorId = data[1].anchor!!
+            binding.editText.setText(data[1].anchor)
+            Toast.makeText(requireContext(), data[1].anchor, Toast.LENGTH_LONG).show()
+        }
+    }
+
 }

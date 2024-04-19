@@ -23,7 +23,6 @@ import com.google.ar.core.Pose
 import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
 import com.magic.ui.databinding.FragmentModelBinding
-import com.magic.ui.databinding.FragmentResolveBotBinding
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
@@ -37,6 +36,7 @@ import kotlinx.coroutines.launch
 class ModelFragment : Fragment(R.layout.fragment_model) {
     private var _binding: FragmentModelBinding? = null
     private val repository = MuseMagicRepositoryImpl()
+    private lateinit var sceneView: ArSceneView
     private lateinit var cloudAnchorNode: ArModelNode
     private val firstKitAudio = MediaPlayer()
     private val welcomeAudio = MediaPlayer()
@@ -68,54 +68,49 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
         }
         val bottomGuideline = view.findViewById<Guideline>(R.id.bottomGuideline)
         bottomGuideline.doOnApplyWindowInsets { systemBarsInsets ->
+            // Add the navigation bar margin
             bottomGuideline.setGuidelineEnd(systemBarsInsets.bottom)
         }
-        binding.sceneView.apply {
-            planeRenderer.isEnabled = false
-            indirectLightEstimated
-            planeFindingMode
-            isDepthOcclusionEnabled = true
+
+        sceneView = view.findViewById(R.id.sceneView)
+        sceneView.apply {
             cloudAnchorEnabled = true
-            // Move the instructions up to avoid an overlap with the buttons
         }
-        binding.skipButton.setOnClickListener {
-            binding.cardView.isVisible = false
-            binding.resolveButton.isVisible = true
-        }
+
         lifecycleScope.launch(Dispatchers.Main) {
-            binding.skipButton.isVisible = false
             delay(1000)
             playAudio(R.raw.welcome, welcomeAudio)
             delay(2000)
-            binding.cardView.isVisible = true
+            binding.resolveButton.isVisible = true
             delay(1000)
             getAnchorId()
-            binding.skipButton.isVisible = true
         }
         cloudAnchorNode =
             ArModelNode(
-                engine = binding.sceneView.engine,
+                engine = sceneView.engine,
                 placementMode = PlacementMode.PLANE_HORIZONTAL
             ).apply {
-                parent = binding.sceneView
+                parent = sceneView
                 isSmoothPoseEnable = false
-                isVisible = true
+                isVisible = false
                 loadModelGlbAsync(
-                    glbFileLocation = "models/mainModelTempProjects.glb",
+                    glbFileLocation = "mainModelTempProjects.glb",
                     scaleToUnits = 0.7f
                 ) {
                     isLoading = false
                 }
             }
         binding.resolveButton.setOnClickListener {
-            getModel()
+            lifecycleScope.launch(Dispatchers.Main) {
+                resolveAnchor()
+            }
+
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-        detachAnchor()
     }
 
     private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
@@ -142,7 +137,7 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
     }
 
     private suspend fun resolveAnchor(){
-        cloudAnchorNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
+        cloudAnchorNode.resolveCloudAnchor("ua-a6541ae534a65caf30a9b29a5f62cd0d") { anchor: Anchor, success: Boolean ->
             if (success) {
                 cloudAnchorNode.isVisible = true
                 lifecycleScope.launch(Dispatchers.Main) {

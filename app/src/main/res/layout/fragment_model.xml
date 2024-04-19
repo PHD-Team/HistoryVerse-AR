@@ -90,42 +90,5 @@
             app:indicatorSize="64dp"
             app:trackColor="#3FFFFFFF" />
     </FrameLayout>
-    <FrameLayout
-        android:id="@+id/card_view"
-        android:visibility="gone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-        <androidx.cardview.widget.CardView
-            android:backgroundTint="@color/black"
-            android:layout_width="350.dp"
-            android:layout_height="500.dp"
-            app:cardCornerRadius="50.dp"
-            >
-            <ImageView
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:layout_gravity="center"
-                android:src="@drawable/hv"
-                android:layout_margin="10dp"
-                android:scaleType="centerCrop"
-                android:id="@+id/img"
-                android:contentDescription="@string/app_name" />
 
-            <Button
-                android:id="@+id/skip_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/primary_color"
-                android:text="@string/skip"
-                android:layout_gravity="bottom|center_horizontal"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="20dp"
-                android:textSize="20sp"
-                />
-        </androidx.cardview.widget.CardView>
-    </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

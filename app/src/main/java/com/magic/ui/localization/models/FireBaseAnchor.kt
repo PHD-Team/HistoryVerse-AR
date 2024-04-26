@@ -7,5 +7,5 @@ data class FireBaseAnchor(
 
 data class FireBasePath(
     val order : Int = 1 ,
-    val anchor : List<FireBaseAnchor>? = emptyList() ,
+    val anchors : List<FireBaseAnchor>? = emptyList() ,
 )

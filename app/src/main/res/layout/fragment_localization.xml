@@ -62,14 +62,24 @@
             android:contentDescription="TODO"/>
     <Button
             android:id="@+id/readyButton"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ready !"
+            android:text="@string/start_your_journey"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            android:layout_marginEnd="20dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
             android:layout_marginBottom="100dp"
             android:backgroundTint="@color/black"
             android:visibility="gone"
+    />
+    <androidx.cardview.widget.CardView
+            android:id="@+id/completedCard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
     />
 </androidx.constraintlayout.widget.ConstraintLayout>

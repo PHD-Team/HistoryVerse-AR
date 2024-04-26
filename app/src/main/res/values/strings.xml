@@ -17,5 +17,6 @@
     <string name="take_photo">take photo</string>
     <string name="scan_the_artifact">scan the artifact</string>
     <string name="skip">skip</string>
-    <string name="move_the_phone_throught_the_room">move the phone throught the room</string>
+    <string name="move_the_phone_throught_the_room">move the phone around the room</string>
+    <string name="start_your_journey">start your journey</string>
 </resources>

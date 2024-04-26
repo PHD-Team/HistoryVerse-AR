@@ -34,14 +34,13 @@ class LocalizationFragment : Fragment() {
     private var _binding : FragmentLocalizationBinding? = null
     private val binding get() = _binding !!
     private lateinit var sceneView : ArSceneView
-    private var isLoading = true
+    private var isLoading = false
         set(value) {
             field = value
             binding.loadingAnimation.isGone = ! value
         }
     private var path : FireBasePath = FireBasePath()
     private val modelNodes = mutableListOf<ArModelNode>()
-    private lateinit var currentNode : ArModelNode
 
     override fun onCreateView(
         inflater : LayoutInflater , container : ViewGroup? ,
@@ -88,16 +87,25 @@ class LocalizationFragment : Fragment() {
         binding.readyButton.setOnClickListener {
             binding.handPhoneImage.isGone = true
             binding.myText.isGone = true
-            isLoading = true
+            binding.readyButton.isGone = true
 
+            isLoading = true
             path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
         }
 
 
         sceneView.onArFrame = {
-            if (modelNodes.isNotEmpty() && calculateDistance() < 1.3f && item < path.anchors?.size !!) {
+            if (modelNodes.isNotEmpty() &&
+                calculateDistance() < 1.6f &&
+                item < path.anchors?.size !! &&
+                cloudNode?.cloudAnchorTaskInProgress == false
+            ) {
                 path.anchors?.get(item)?.anchor?.let { id -> resolveAnchor(id) }
                 item ++
+            } else if (item == path.anchors?.size && calculateDistance() < 1.6f) {
+// AUDIO
+
+
             }
 
 

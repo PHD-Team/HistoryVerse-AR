@@ -1,12 +1,12 @@
 package com.magic.ui.localization
 
-import android.content.Context
-import com.magic.ui.localization.models.FireBaseAnchor
+import com.magic.ui.localization.models.FireBasePath
 
-class LocalizationRepository  {
-    private val fireBase: LocalizationFireBase =  LocalizationFireBase()
-   suspend fun getPathAnchorsIds(order:Int,context:Context): List<FireBaseAnchor> {
-        return fireBase.getPathAnchorsIds(order,context)
+class LocalizationRepository {
+    private val fireBase : LocalizationFireBase = LocalizationFireBase()
+    suspend fun getPathAnchorsIds(order : Int) : FireBasePath {
+        val path = fireBase.getPathAnchorsIds(order)
+        return path
     }
 
 }

@@ -1,4 +1,4 @@
-package com.magic.ui.localization.models
+package com.magic.data.models
 
 data class FireBaseAnchor(
     val anchor : String = "" ,

@@ -2,6 +2,8 @@ package com.magic.ui.localization
 
 import android.animation.ObjectAnimator
 import android.graphics.Path
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +20,9 @@ import com.airbnb.lottie.LottieDrawable
 import com.google.ar.core.Config
 import com.google.ar.core.Pose
 import com.magic.ui.databinding.FragmentLocalizationBinding
-import com.magic.ui.localization.models.FireBasePath
+import com.magic.data.models.FireBasePath
+import com.magic.ui.R
+import com.magic.ui.fragments.main.ModelFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
@@ -41,6 +45,8 @@ class LocalizationFragment : Fragment() {
         }
     private var path : FireBasePath = FireBasePath()
     private val modelNodes = mutableListOf<ArModelNode>()
+    private val mediaPlayer = MediaPlayer()
+
 
     override fun onCreateView(
         inflater : LayoutInflater , container : ViewGroup? ,
@@ -52,7 +58,6 @@ class LocalizationFragment : Fragment() {
 
     override fun onViewCreated(view : View , savedInstanceState : Bundle?) {
         super.onViewCreated(view , savedInstanceState)
-
         sceneView = binding.sceneView.apply {
             arCore.createSession(requireContext())
             configureSession { _ , config ->
@@ -84,36 +89,56 @@ class LocalizationFragment : Fragment() {
             delay(2500)
             binding.readyButton.isVisible = true
         }
-        binding.readyButton.setOnClickListener {
-            binding.handPhoneImage.isGone = true
-            binding.myText.isGone = true
-            binding.readyButton.isGone = true
+        binding.apply {
+            continueButton.setOnClickListener {
+                val transaction = parentFragmentManager.beginTransaction()
+                transaction.replace(R.id.containerFragment , ModelFragment())
+                transaction.addToBackStack(null)
+                transaction.commit()
+            }
+            readyButton.setOnClickListener {
+                handPhoneImage.isGone = true
+                myText.isGone = true
+                readyButton.isGone = true
 
-            isLoading = true
-            path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
+                isLoading = true
+                path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
+            }
         }
+
 
 
         sceneView.onArFrame = {
-            if (modelNodes.isNotEmpty() &&
-                calculateDistance() < 1.6f &&
-                item < path.anchors?.size !! &&
-                cloudNode?.cloudAnchorTaskInProgress == false
-            ) {
-                path.anchors?.get(item)?.anchor?.let { id -> resolveAnchor(id) }
-                item ++
-            } else if (item == path.anchors?.size && calculateDistance() < 1.6f) {
-// AUDIO
-
-
+            "${calculateDistance()}${cloudNode?.cloudAnchorTaskInProgress.toString()}".also {
+                binding.anchorId.text = it
             }
 
-
+            if (modelNodes.isNotEmpty() &&
+                calculateDistance() in 1.70 .. 1.72 &&
+                item <= path.anchors?.size !! &&
+                item == modelNodes.size + 1
+            ) {
+                path.anchors?.get(item - 1)?.anchor?.let { id -> resolveAnchor(id) }
+//                binding.anchorId.text = item.toString()
+            } else if (
+                item == path.anchors?.size?.plus(1) &&
+                calculateDistance() in 1.70 .. 1.72 &&
+                ! mediaPlayer.isPlaying
+            ) {
+                playAudio(R.raw.congrats_voice , mediaPlayer)
+                binding.completedCard.isVisible = true
+            }
         }
-
-
     }
 
+    private fun playAudio(resourceId : Int , mediaPlayer : MediaPlayer) {
+        mediaPlayer.setDataSource(
+            requireContext() ,
+            Uri.parse("android.resource://com.magic.ui/$resourceId")
+        )
+        mediaPlayer.prepare()
+        mediaPlayer.start()
+    }
 
     private fun resolveAnchor(anchorID : String) {
         lifecycleScope.launch {
@@ -148,11 +173,14 @@ class LocalizationFragment : Fragment() {
             }
         }
         isLoading = false
+        item ++
     }
 
     private fun calculateDistance() : Float {
+        if (modelNodes.isEmpty())
+            return 4f
         val cameraPosition = sceneView.cameraNode.position
-        val nodePosition = cloudNode?.position ?: return 4f
+        val nodePosition = modelNodes.last().position ?: return 4f
 
         val dx = cameraPosition.x - nodePosition.x
         val dy = cameraPosition.y - nodePosition.y

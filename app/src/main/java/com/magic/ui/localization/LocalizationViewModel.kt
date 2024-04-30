@@ -1,7 +1,7 @@
 package com.magic.ui.localization
 
 import androidx.lifecycle.ViewModel
-import com.magic.ui.localization.models.FireBasePath
+import com.magic.data.models.FireBasePath
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 

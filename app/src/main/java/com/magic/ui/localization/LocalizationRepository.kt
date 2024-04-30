@@ -1,6 +1,6 @@
 package com.magic.ui.localization
 
-import com.magic.ui.localization.models.FireBasePath
+import com.magic.data.models.FireBasePath
 
 class LocalizationRepository {
     private val fireBase : LocalizationFireBase = LocalizationFireBase()

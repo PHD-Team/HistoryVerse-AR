@@ -8,4 +8,8 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="primary_color">#FFE8A94A</color>
+    <color name="sceneview">#FFE8A94A</color>
+    <color name="grey_500">#808080</color>
+    <color name="grey_700">#606060</color>
+    <color name="primary_congrats">#FFAE21</color>
 </resources>

@@ -76,18 +76,21 @@ class LocalizationFragment : Fragment() {
         binding.loadingAnimation.repeatCount = LottieDrawable.INFINITE
 
         lifecycleScope.launch {
-            isLoading = true
+            isLoading = false
 
             viewModel.getPathAnchors().also { path ->
                 this@LocalizationFragment.path = path
             }
-            isLoading = false
-
         }
+
         binding.readyButton.isVisible = false
+        binding.handPhoneImage.isGone = true
         lifecycleScope.launch {
-            delay(2500)
-            binding.readyButton.isVisible = true
+            delay(1500)
+            binding.welcomeCard.isVisible = true
+            playAudio(R.raw.welcome, mediaPlayer)
+            delay(5000)
+            binding.nextButton.isVisible = true
         }
         binding.apply {
             continueButton.setOnClickListener {
@@ -104,14 +107,26 @@ class LocalizationFragment : Fragment() {
                 isLoading = true
                 path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
             }
+
+            nextButton.setOnClickListener {
+                binding.welcomeCard.isGone = true
+                lifecycleScope.launch {
+                    binding.handPhoneImage.isVisible = true
+                    binding.myText.isVisible = true
+                    delay(2500)
+                    binding.readyButton.isVisible = true
+                }
+            }
+
+
         }
 
 
 
         sceneView.onArFrame = {
-            "${calculateDistance()}${cloudNode?.cloudAnchorTaskInProgress.toString()}".also {
-                binding.anchorId.text = it
-            }
+//            "${calculateDistance()}${cloudNode?.cloudAnchorTaskInProgress.toString()}".also {
+//                binding.anchorId.text = it
+//            }
 
             if (modelNodes.isNotEmpty() &&
                 calculateDistance() in 1.70 .. 1.72 &&
@@ -126,7 +141,7 @@ class LocalizationFragment : Fragment() {
                 ! mediaPlayer.isPlaying
             ) {
                 playAudio(R.raw.congrats_voice , mediaPlayer)
-                binding.completedCard.isVisible = true
+                binding.welcomeCard.isVisible = true
             }
         }
     }

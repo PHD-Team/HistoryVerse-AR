@@ -23,12 +23,13 @@ import com.google.ar.core.Pose
 import com.magic.ui.databinding.FragmentLocalizationBinding
 import com.magic.data.models.FireBasePath
 import com.magic.ui.R
-import com.magic.ui.fragments.main.ModelFragment
+import com.magic.ui.fragments.ResolveBotFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.math.Position
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class LocalizationFragment : Fragment() {
@@ -47,6 +48,7 @@ class LocalizationFragment : Fragment() {
     private var path : FireBasePath = FireBasePath()
     private val modelNodes = mutableListOf<ArModelNode>()
     private val mediaPlayer = MediaPlayer()
+    private val mediaPlayerBetngan = MediaPlayer()
 
     val sharedPref = requireActivity().getSharedPreferences("path" , MODE_PRIVATE)
 
@@ -92,14 +94,15 @@ class LocalizationFragment : Fragment() {
         lifecycleScope.launch {
             delay(1500)
             binding.welcomeCard.isVisible = true
-            playAudio(R.raw.welcome , mediaPlayer)
+            playAudio(R.raw.welcome, mediaPlayer)
             delay(5000)
             binding.nextButton.isVisible = true
         }
         binding.apply {
             continueButton.setOnClickListener {
+                binding.completedCard.isGone = true
                 val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.containerFragment , ModelFragment())
+                transaction.replace(R.id.containerFragment, ResolveBotFragment())
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -141,11 +144,12 @@ class LocalizationFragment : Fragment() {
 //                binding.anchorId.text = item.toString()
             } else if (
                 item == path.anchors?.size?.plus(1) &&
-                calculateDistance() in 1.70 .. 1.72 &&
-                ! mediaPlayer.isPlaying
+                calculateDistance() in 1.70..1.72 &&
+                !mediaPlayer.isPlaying &&
+                !mediaPlayerBetngan.isPlaying
             ) {
-                playAudio(R.raw.congrats_voice , mediaPlayer)
-                binding.welcomeCard.isVisible = true
+                playAudio(R.raw.congrats_voice, mediaPlayerBetngan)
+                binding.completedCard.isVisible = true
             }
         }
     }

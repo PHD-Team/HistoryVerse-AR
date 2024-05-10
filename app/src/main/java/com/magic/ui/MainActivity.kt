@@ -27,9 +27,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             }
             title = ""
         })
+        val sharedPref = this.getSharedPreferences("path", MODE_PRIVATE)
+        sharedPref.edit().putInt("order", 1).apply()
 
         supportFragmentManager.commit {
             add(R.id.containerFragment, LocalizationFragment::class.java, Bundle())
         }
     }
+
 }

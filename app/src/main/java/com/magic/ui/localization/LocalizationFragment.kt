@@ -6,11 +6,13 @@ import android.graphics.Path
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.view.doOnLayout
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
@@ -31,40 +33,39 @@ import io.github.sceneview.math.Position
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LocalizationFragment : Fragment() {
     private var item = 1
 
-    private var cloudNode : ArModelNode? = null
-    private val viewModel : LocalizationViewModel by viewModels()
-    private var _binding : FragmentLocalizationBinding? = null
-    private val binding get() = _binding !!
-    private lateinit var sceneView : ArSceneView
+    private var cloudNode: ArModelNode? = null
+    private val viewModel: LocalizationViewModel by viewModels()
+    private var _binding: FragmentLocalizationBinding? = null
+    private val binding get() = _binding!!
+    private lateinit var sceneView: ArSceneView
     private var isLoading = false
         set(value) {
             field = value
-            binding.loadingAnimation.isGone = ! value
+            binding.loadingAnimation.isGone = !value
         }
-    private var path : FireBasePath = FireBasePath()
+    private var path: FireBasePath = FireBasePath()
     private val modelNodes = mutableListOf<ArModelNode>()
     private val mediaPlayer = MediaPlayer()
     private val mediaPlayerBetngan = MediaPlayer()
 
-    val sharedPref = requireActivity().getSharedPreferences("path" , MODE_PRIVATE)
-
     override fun onCreateView(
-        inflater : LayoutInflater , container : ViewGroup? ,
-        savedInstanceState : Bundle?
-    ) : View {
-        _binding = FragmentLocalizationBinding.inflate(inflater , container , false)
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentLocalizationBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view : View , savedInstanceState : Bundle?) {
-        super.onViewCreated(view , savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         sceneView = binding.sceneView.apply {
             arCore.createSession(requireContext())
-            configureSession { _ , config ->
+            configureSession { _, config ->
                 config.cloudAnchorMode = Config.CloudAnchorMode.ENABLED
                 config.depthMode = Config.DepthMode.AUTOMATIC
                 config.focusMode = Config.FocusMode.AUTO
@@ -76,7 +77,10 @@ class LocalizationFragment : Fragment() {
             cloudAnchorEnabled = true
             planeRenderer.isVisible = true
         }
-        val order = sharedPref.getInt("order" , 1)
+        val sharedPref = requireActivity().getSharedPreferences("path", MODE_PRIVATE)
+        val order = sharedPref.getInt("order", 1)
+
+        Log.d("order", order.toString())
 
         binding.loadingAnimation.repeatCount = LottieDrawable.INFINITE
 
@@ -85,35 +89,37 @@ class LocalizationFragment : Fragment() {
 
             viewModel.getPathAnchors(order).also { path ->
                 this@LocalizationFragment.path = path
-                sharedPref.edit().putInt("order" , order + 1).apply()
+
+                if (order == 1) {
+                    lifecycleScope.launch {
+                        delay(1500)
+                        binding.welcomeCard.isVisible = true
+                        playAudio(R.raw.welcome, mediaPlayer)
+                        delay(5000)
+                        binding.nextButton.isVisible = true
+                    }
+                } else {
+                    binding.apply {
+                        handPhoneImage.isGone = true
+                        myText.isGone = true
+                        readyButton.isGone = true
+
+                        isLoading = true
+                        path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
+                    }
+                }
             }
+
         }
 
         binding.readyButton.isVisible = false
         binding.handPhoneImage.isGone = true
-        if (order == 1) {
-            lifecycleScope.launch {
-                delay(1500)
-                binding.welcomeCard.isVisible = true
-                playAudio(R.raw.welcome , mediaPlayer)
-                delay(5000)
-                binding.nextButton.isVisible = true
-            }
-        } else {
-            binding.apply {
-                handPhoneImage.isGone = true
-                myText.isGone = true
-                readyButton.isGone = true
 
-                isLoading = true
-                path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
-            }
-        }
         binding.apply {
             continueButton.setOnClickListener {
                 binding.completedCard.isGone = true
                 val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.containerFragment , ResolveBotFragment())
+                transaction.replace(R.id.containerFragment, ResolveBotFragment())
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -147,48 +153,51 @@ class LocalizationFragment : Fragment() {
 //            }
 
             if (modelNodes.isNotEmpty() &&
-                calculateDistance() in 1.70 .. 1.72 &&
-                item <= path.anchors?.size !! &&
+                calculateDistance() in 1.70..1.72 &&
+                item <= path.anchors?.size!! &&
                 item == modelNodes.size + 1
             ) {
                 path.anchors?.get(item - 1)?.anchor?.let { id -> resolveAnchor(id) }
 //                binding.anchorId.text = item.toString()
             } else if (
                 item == path.anchors?.size?.plus(1) &&
-                calculateDistance() in 1.70 .. 1.72 &&
-                ! mediaPlayer.isPlaying &&
-                ! mediaPlayerBetngan.isPlaying
+                !mediaPlayer.isPlaying &&
+                !mediaPlayerBetngan.isPlaying &&
+                calculateDistance() in 1.70..1.72
             ) {
-                playAudio(R.raw.congrats_voice , mediaPlayerBetngan)
+                playAudio(R.raw.congrats_voice, mediaPlayerBetngan)
                 binding.completedCard.isVisible = true
             }
         }
     }
 
-    private fun playAudio(resourceId : Int , mediaPlayer : MediaPlayer) {
+    private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
         mediaPlayer.setDataSource(
-            requireContext() ,
+            requireContext(),
             Uri.parse("android.resource://com.magic.ui/$resourceId")
         )
         mediaPlayer.prepare()
         mediaPlayer.start()
+        mediaPlayer.setOnCompletionListener {
+            mediaPlayer.stop()
+        }
     }
 
-    private fun resolveAnchor(anchorID : String) {
+    private fun resolveAnchor(anchorID: String) {
         lifecycleScope.launch {
             isLoading = true
 
             cloudNode = ArModelNode(
-                engine = sceneView.engine ,
+                engine = sceneView.engine,
             ).apply {
                 placementMode = PlacementMode.BEST_AVAILABLE
                 parent = sceneView
-                position = Position(0f , 0f , 0f)
+                position = Position(0f, 0f, 0f)
                 isSmoothPoseEnable = false
                 isVisible = true
-                loadModelGlbAsync("models/ball.glb" , scaleToUnits = .3f)
+                loadModelGlbAsync("models/ball.glb", scaleToUnits = .3f)
             }.apply {
-                resolveCloudAnchor(cloudAnchorId = anchorID) { anchor , success ->
+                resolveCloudAnchor(cloudAnchorId = anchorID) { anchor, success ->
                     if (success) {
                         modelNodes.add(this)
                         isLoading = false
@@ -197,7 +206,7 @@ class LocalizationFragment : Fragment() {
                     } else {
                         isLoading = false
                         Toast.makeText(
-                            requireContext() , "failed to resolve" , Toast.LENGTH_LONG
+                            requireContext(), "failed to resolve", Toast.LENGTH_LONG
                         ).show()
                     }
                 }
@@ -207,10 +216,10 @@ class LocalizationFragment : Fragment() {
             }
         }
         isLoading = false
-        item ++
+        item++
     }
 
-    private fun calculateDistance() : Float {
+    private fun calculateDistance(): Float {
         if (modelNodes.isEmpty())
             return 4f
         val cameraPosition = sceneView.cameraNode.position
@@ -228,20 +237,26 @@ class LocalizationFragment : Fragment() {
             val x = it.x
             val y = it.y
             val animationPath = Path().apply {
-                setLastPoint(x , y)
-                lineTo(x + x / 2 , y)
-                lineTo(x , y - y / 4)
-                lineTo(x - x / 2 , y)
-                lineTo(x , y)
+                setLastPoint(x, y)
+                lineTo(x + x / 2, y)
+                lineTo(x, y - y / 4)
+                lineTo(x - x / 2, y)
+                lineTo(x, y)
             }
             val animationDuration = 3000L
 
-            ObjectAnimator.ofFloat(it , View.X , View.Y , animationPath).apply {
+            ObjectAnimator.ofFloat(it, View.X, View.Y, animationPath).apply {
                 duration = animationDuration
                 repeatCount = Animation.INFINITE
                 start()
             }
         }
         super.onResume()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val sharedPref = requireActivity().getSharedPreferences("path", MODE_PRIVATE)
+        sharedPref.edit().putInt("order", 1).apply()
     }
 }

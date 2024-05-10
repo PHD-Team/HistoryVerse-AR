@@ -91,18 +91,29 @@ class LocalizationFragment : Fragment() {
 
         binding.readyButton.isVisible = false
         binding.handPhoneImage.isGone = true
-        lifecycleScope.launch {
-            delay(1500)
-            binding.welcomeCard.isVisible = true
-            playAudio(R.raw.welcome, mediaPlayer)
-            delay(5000)
-            binding.nextButton.isVisible = true
+        if (order == 1) {
+            lifecycleScope.launch {
+                delay(1500)
+                binding.welcomeCard.isVisible = true
+                playAudio(R.raw.welcome , mediaPlayer)
+                delay(5000)
+                binding.nextButton.isVisible = true
+            }
+        } else {
+            binding.apply {
+                handPhoneImage.isGone = true
+                myText.isGone = true
+                readyButton.isGone = true
+
+                isLoading = true
+                path.anchors?.first()?.anchor?.let { id -> resolveAnchor(id) }
+            }
         }
         binding.apply {
             continueButton.setOnClickListener {
                 binding.completedCard.isGone = true
                 val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.containerFragment, ResolveBotFragment())
+                transaction.replace(R.id.containerFragment , ResolveBotFragment())
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -144,11 +155,11 @@ class LocalizationFragment : Fragment() {
 //                binding.anchorId.text = item.toString()
             } else if (
                 item == path.anchors?.size?.plus(1) &&
-                calculateDistance() in 1.70..1.72 &&
-                !mediaPlayer.isPlaying &&
-                !mediaPlayerBetngan.isPlaying
+                calculateDistance() in 1.70 .. 1.72 &&
+                ! mediaPlayer.isPlaying &&
+                ! mediaPlayerBetngan.isPlaying
             ) {
-                playAudio(R.raw.congrats_voice, mediaPlayerBetngan)
+                playAudio(R.raw.congrats_voice , mediaPlayerBetngan)
                 binding.completedCard.isVisible = true
             }
         }

@@ -22,45 +22,46 @@ import com.google.ar.core.Pose
 import com.magic.ui.databinding.FragmentLocalizationBinding
 import com.magic.data.models.FireBasePath
 import com.magic.ui.R
-import com.magic.ui.fragments.main.ModelFragment
+import com.magic.ui.fragments.ResolveBotFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.ar.node.PlacementMode
 import io.github.sceneview.math.Position
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class LocalizationFragment : Fragment() {
     private var item = 1
 
-    private var cloudNode : ArModelNode? = null
-    private val viewModel : LocalizationViewModel by viewModels()
-    private var _binding : FragmentLocalizationBinding? = null
-    private val binding get() = _binding !!
-    private lateinit var sceneView : ArSceneView
+    private var cloudNode: ArModelNode? = null
+    private val viewModel: LocalizationViewModel by viewModels()
+    private var _binding: FragmentLocalizationBinding? = null
+    private val binding get() = _binding!!
+    private lateinit var sceneView: ArSceneView
     private var isLoading = false
         set(value) {
             field = value
             binding.loadingAnimation.isGone = ! value
         }
-    private var path : FireBasePath = FireBasePath()
+    private var path: FireBasePath = FireBasePath()
     private val modelNodes = mutableListOf<ArModelNode>()
     private val mediaPlayer = MediaPlayer()
-
+    private val mediaPlayerBetngan = MediaPlayer()
 
     override fun onCreateView(
-        inflater : LayoutInflater , container : ViewGroup? ,
-        savedInstanceState : Bundle?
-    ) : View {
-        _binding = FragmentLocalizationBinding.inflate(inflater , container , false)
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentLocalizationBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view : View , savedInstanceState : Bundle?) {
-        super.onViewCreated(view , savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         sceneView = binding.sceneView.apply {
             arCore.createSession(requireContext())
-            configureSession { _ , config ->
+            configureSession { _, config ->
                 config.cloudAnchorMode = Config.CloudAnchorMode.ENABLED
                 config.depthMode = Config.DepthMode.AUTOMATIC
                 config.focusMode = Config.FocusMode.AUTO
@@ -72,7 +73,6 @@ class LocalizationFragment : Fragment() {
             cloudAnchorEnabled = true
             planeRenderer.isVisible = true
         }
-
         binding.loadingAnimation.repeatCount = LottieDrawable.INFINITE
 
         lifecycleScope.launch {
@@ -94,8 +94,9 @@ class LocalizationFragment : Fragment() {
         }
         binding.apply {
             continueButton.setOnClickListener {
+                binding.completedCard.isGone = true
                 val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.containerFragment , ModelFragment())
+                transaction.replace(R.id.containerFragment, ResolveBotFragment())
                 transaction.addToBackStack(null)
                 transaction.commit()
             }
@@ -129,47 +130,48 @@ class LocalizationFragment : Fragment() {
 //            }
 
             if (modelNodes.isNotEmpty() &&
-                calculateDistance() in 1.70 .. 1.72 &&
-                item <= path.anchors?.size !! &&
+                calculateDistance() in 1.70..1.72 &&
+                item <= path.anchors?.size!! &&
                 item == modelNodes.size + 1
             ) {
                 path.anchors?.get(item - 1)?.anchor?.let { id -> resolveAnchor(id) }
 //                binding.anchorId.text = item.toString()
             } else if (
                 item == path.anchors?.size?.plus(1) &&
-                calculateDistance() in 1.70 .. 1.72 &&
-                ! mediaPlayer.isPlaying
+                calculateDistance() in 1.70..1.72 &&
+                !mediaPlayer.isPlaying &&
+                !mediaPlayerBetngan.isPlaying
             ) {
-                playAudio(R.raw.congrats_voice , mediaPlayer)
-                binding.welcomeCard.isVisible = true
+                playAudio(R.raw.congrats_voice, mediaPlayerBetngan)
+                binding.completedCard.isVisible = true
             }
         }
     }
 
-    private fun playAudio(resourceId : Int , mediaPlayer : MediaPlayer) {
+    private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
         mediaPlayer.setDataSource(
-            requireContext() ,
+            requireContext(),
             Uri.parse("android.resource://com.magic.ui/$resourceId")
         )
         mediaPlayer.prepare()
         mediaPlayer.start()
     }
 
-    private fun resolveAnchor(anchorID : String) {
+    private fun resolveAnchor(anchorID: String) {
         lifecycleScope.launch {
             isLoading = true
 
             cloudNode = ArModelNode(
-                engine = sceneView.engine ,
+                engine = sceneView.engine,
             ).apply {
                 placementMode = PlacementMode.BEST_AVAILABLE
                 parent = sceneView
-                position = Position(0f , 0f , 0f)
+                position = Position(0f, 0f, 0f)
                 isSmoothPoseEnable = false
                 isVisible = true
-                loadModelGlbAsync("models/ball.glb" , scaleToUnits = .3f)
+                loadModelGlbAsync("models/ball.glb", scaleToUnits = .3f)
             }.apply {
-                resolveCloudAnchor(cloudAnchorId = anchorID) { anchor , success ->
+                resolveCloudAnchor(cloudAnchorId = anchorID) { anchor, success ->
                     if (success) {
                         modelNodes.add(this)
                         isLoading = false
@@ -178,7 +180,7 @@ class LocalizationFragment : Fragment() {
                     } else {
                         isLoading = false
                         Toast.makeText(
-                            requireContext() , "failed to resolve" , Toast.LENGTH_LONG
+                            requireContext(), "failed to resolve", Toast.LENGTH_LONG
                         ).show()
                     }
                 }
@@ -188,10 +190,10 @@ class LocalizationFragment : Fragment() {
             }
         }
         isLoading = false
-        item ++
+        item++
     }
 
-    private fun calculateDistance() : Float {
+    private fun calculateDistance(): Float {
         if (modelNodes.isEmpty())
             return 4f
         val cameraPosition = sceneView.cameraNode.position
@@ -209,15 +211,15 @@ class LocalizationFragment : Fragment() {
             val x = it.x
             val y = it.y
             val animationPath = Path().apply {
-                setLastPoint(x , y)
-                lineTo(x + x / 2 , y)
-                lineTo(x , y - y / 4)
-                lineTo(x - x / 2 , y)
-                lineTo(x , y)
+                setLastPoint(x, y)
+                lineTo(x + x / 2, y)
+                lineTo(x, y - y / 4)
+                lineTo(x - x / 2, y)
+                lineTo(x, y)
             }
             val animationDuration = 3000L
 
-            ObjectAnimator.ofFloat(it , View.X , View.Y , animationPath).apply {
+            ObjectAnimator.ofFloat(it, View.X, View.Y, animationPath).apply {
                 duration = animationDuration
                 repeatCount = Animation.INFINITE
                 start()

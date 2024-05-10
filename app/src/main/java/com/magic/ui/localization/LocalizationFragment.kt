@@ -1,6 +1,7 @@
 package com.magic.ui.localization
 
 import android.animation.ObjectAnimator
+import android.content.Context.MODE_PRIVATE
 import android.graphics.Path
 import android.media.MediaPlayer
 import android.net.Uri
@@ -47,6 +48,7 @@ class LocalizationFragment : Fragment() {
     private val modelNodes = mutableListOf<ArModelNode>()
     private val mediaPlayer = MediaPlayer()
 
+    val sharedPref = requireActivity().getSharedPreferences("path" , MODE_PRIVATE)
 
     override fun onCreateView(
         inflater : LayoutInflater , container : ViewGroup? ,
@@ -72,14 +74,16 @@ class LocalizationFragment : Fragment() {
             cloudAnchorEnabled = true
             planeRenderer.isVisible = true
         }
+        val order = sharedPref.getInt("order" , 1)
 
         binding.loadingAnimation.repeatCount = LottieDrawable.INFINITE
 
         lifecycleScope.launch {
             isLoading = false
 
-            viewModel.getPathAnchors().also { path ->
+            viewModel.getPathAnchors(order).also { path ->
                 this@LocalizationFragment.path = path
+                sharedPref.edit().putInt("order" , order + 1).apply()
             }
         }
 
@@ -88,7 +92,7 @@ class LocalizationFragment : Fragment() {
         lifecycleScope.launch {
             delay(1500)
             binding.welcomeCard.isVisible = true
-            playAudio(R.raw.welcome, mediaPlayer)
+            playAudio(R.raw.welcome , mediaPlayer)
             delay(5000)
             binding.nextButton.isVisible = true
         }

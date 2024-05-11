@@ -18,10 +18,10 @@ import com.google.ar.core.Config
 import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
 import com.magic.ui.databinding.FragmentResolveBotBinding
-import com.magic.ui.fragments.main.ModelFragment
 import com.magic.ui.localization.LocalizationFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
+import io.github.sceneview.math.Position
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
@@ -43,7 +43,6 @@ class ResolveBotFragment : Fragment() {
             binding.loadingView.isGone = !value
         }
     private val binding get() = _binding!!
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -75,13 +74,16 @@ class ResolveBotFragment : Fragment() {
             binding.cardView.isVisible = false
             binding.resolveButton.isVisible = true
         }
+        val sharedPref = requireActivity().getSharedPreferences("path", Context.MODE_PRIVATE)
+        val order = sharedPref.getInt("order", 1)
+
         lifecycleScope.launch(Dispatchers.Main) {
             delay(1000)
-            getAnchorId()
+            getAnchorId(order)
             binding.resolveButton.isVisible = true
         }
         binding.resolveButton.setOnClickListener {
-            getModel()
+            getModel(order)
         }
         firstKitAudio.setOnCompletionListener {
             lifecycleScope.launch(Dispatchers.Main) {
@@ -105,11 +107,11 @@ class ResolveBotFragment : Fragment() {
         mediaPlayer.start()
     }
 
-    private fun getModel() {
+    private fun getModel(order: Int) {
         lifecycleScope.launch(Dispatchers.Main) {
             val getAnchorId = launch {
                 isLoading = true
-                getAnchorId()
+                getAnchorId(order)
             }
             joinAll(getAnchorId)
             launch(Dispatchers.Main) {
@@ -129,10 +131,11 @@ class ResolveBotFragment : Fragment() {
                 isVisible = false
                 loadModelGlbAsync(
                     glbFileLocation = "models/mainModelTempProjects.glb",
-                    scaleToUnits = 0.5f
+                    scaleToUnits = 1.2f
                 ) {
                     isVisible = true
                     isLoading = false
+                    position = Position(0f,  3f, 0f)
                 }
             }.apply {
 
@@ -176,14 +179,14 @@ class ResolveBotFragment : Fragment() {
     }
 
 
-    private suspend fun getAnchorId() {
+    private suspend fun getAnchorId(order:Int) {
         lifecycleScope.launch {
             isLoading = true
             val data = repository.getAnchorList()
             isLoading = data.isEmpty()
-            anchorId = data[1].anchor!!
-            binding.editText.setText(data[1].anchor)
-            Toast.makeText(requireContext(), data[1].anchor, Toast.LENGTH_LONG).show()
+            anchorId = data[order].anchor!!
+            binding.editText.setText(data[order].anchor)
+            Toast.makeText(requireContext(), data[order].anchor, Toast.LENGTH_LONG).show()
         }
     }
 

@@ -18,6 +18,7 @@ import com.google.ar.core.Config
 import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
 import com.magic.ui.databinding.FragmentResolveBotBinding
+import com.magic.ui.fragments.chatBot.ChatBotFragment
 import com.magic.ui.localization.LocalizationFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
@@ -167,8 +168,8 @@ class ResolveBotFragment : Fragment() {
                     "path",
                     Context.MODE_PRIVATE
                 )
-                sharedPref.edit().putInt("order", sharedPref.getInt("order", 1) + 1).apply()
-                val fragment = LocalizationFragment()
+//                sharedPref.edit().putInt("order", sharedPref.getInt("order", 1) + 1).apply()
+                val fragment = ChatBotFragment()
                 parentFragmentManager.beginTransaction().apply {
                     replace(R.id.containerFragment, fragment)
                     addToBackStack(null)

@@ -1,6 +1,7 @@
 package com.magic.ui.fragments.chatBot
 
 import android.Manifest
+import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
@@ -21,7 +22,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.magic.ui.R
 import com.magic.ui.databinding.FragmentChatBotBinding
+import com.magic.ui.localization.LocalizationFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
@@ -35,7 +38,6 @@ class ChatBotFragment @Inject constructor() : Fragment() {
     private lateinit var chatAdapter: ChatAdapter
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
-    val sharedPref = requireActivity().getSharedPreferences("label" , MODE_PRIVATE)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,6 +63,18 @@ class ChatBotFragment @Inject constructor() : Fragment() {
                 viewModel.updateMicState(false)
             }
         }
+        val sharedPref = requireActivity().getSharedPreferences("path", MODE_PRIVATE)
+        val order = sharedPref.getInt("order", 1)
+
+        viewModel.updateStatueName(
+            when (order) {
+                1 -> "alexander the great"
+                2 -> "nefertiti"
+                3 -> "Tutankhamun"
+                else -> "alexander the great"
+            }
+        )
+
         lifecycleScope.launch {
             viewModel.state
             viewModel.state.collect { uiState ->
@@ -95,6 +109,26 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             } else {
                 startRecording()
 
+            }
+        }
+
+        binding.exitButton.setOnClickListener {
+            navigateToLocalizationFragment()
+        }
+    }
+
+    private fun navigateToLocalizationFragment() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            val sharedPref = requireActivity().getSharedPreferences(
+                "path",
+                Context.MODE_PRIVATE
+            )
+            sharedPref.edit().putInt("order", sharedPref.getInt("order", 1) + 1).apply()
+            val fragment = LocalizationFragment()
+            parentFragmentManager.beginTransaction().apply {
+                replace(R.id.containerFragment, fragment)
+                addToBackStack(null)
+                commit()
             }
         }
     }
@@ -133,7 +167,6 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             release()
         }
         mediaRecorder = null
-        Log.d("AudioFile", audioFile?.toUri().toString())
         viewModel.stopRecording(audioFile?.toUri())
     }
 

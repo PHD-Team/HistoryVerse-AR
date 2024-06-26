@@ -23,21 +23,6 @@ class ChatBotViewModel @Inject constructor(
     private val _state = MutableStateFlow(ChatBotUiState())
     val state = _state.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            Log.d(
-                "start chat",
-                chatRepository.sendTextToBot(
-                    ChatBotStartConvoBody(
-                        speak = false,
-                        query = state.value.statueName,
-                        statue_name = state.value.statueName
-                    )
-                ),
-            )
-        }
-    }
-
     fun onSendClick() {
         if (state.value.messageText.isNotEmpty())
             if (state.value.isSendButtonEnabled) {
@@ -126,6 +111,23 @@ class ChatBotViewModel @Inject constructor(
     fun updateMessageText(text: String) {
         _state.update {
             it.copy(messageText = text)
+        }
+    }
+
+    fun updateStatueName(statueName: String) {
+        _state.update {
+            it.copy(statueName = statueName)
+        }
+        viewModelScope.launch {
+            val response = chatRepository.sendTextToBot(
+                ChatBotStartConvoBody(
+                    speak = false,
+                    query = statueName,
+                    statue_name = statueName
+                )
+            )
+
+            Log.d("start chat", response)
         }
     }
 }

@@ -6,5 +6,7 @@ data class BotAnswerDto(
     @SerializedName("Answer")
     val answer: String?,
     @SerializedName("Question")
-    val question: String?
+    val question: String?,
+    @SerializedName("audio_url")
+    val audioUrl: String?
 )

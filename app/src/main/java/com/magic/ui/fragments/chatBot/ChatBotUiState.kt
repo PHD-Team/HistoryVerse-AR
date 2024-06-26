@@ -10,4 +10,6 @@ data class ChatBotUiState(
     val audioFileUri: String = "",
     val statueName: String = "alexander the great",
     val isSuccess: Boolean = false,
+    val isAudioPlaying: Boolean = false,
+
 )

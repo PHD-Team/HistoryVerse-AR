@@ -2,6 +2,8 @@ package com.magic.data.dataSources
 
 import android.net.Uri
 import com.google.firebase.storage.FirebaseStorage
+import com.magic.data.models.BotAnswerDto
+import com.magic.data.models.ChatBotResponse
 import com.magic.data.models.ChatBotStartConvoBody
 import com.magic.data.models.ChatBotVoiceBody
 import com.magic.data.network.ChatBotService
@@ -14,18 +16,18 @@ class ChatBotDataSource @Inject constructor(
     private val service: ChatBotService,
 ) {
 
-    suspend fun sendTextToBot_startConvo(requestBody: ChatBotStartConvoBody): String {
+    suspend fun sendTextToBot_startConvo(requestBody: ChatBotStartConvoBody): ChatBotResponse? {
 
         val request = service.sendTextToBot(requestBody)
         return if (request.isSuccessful)
-            request.body()?.answer.toString()
+            request.body()?.toBotAnswer()
         else throw Exception(request.message())
     }
 
-    suspend fun sendVoiceToBot_startConvo(requestBody: ChatBotVoiceBody): String {
+    suspend fun sendVoiceToBot_startConvo(requestBody: ChatBotVoiceBody): ChatBotResponse? {
         val request = service.sendVoiceToBot(requestBody)
         return if (request.isSuccessful)
-            request.body()?.answer.toString()
+            request.body()?.toBotAnswer()
         else throw Exception(request.message())
 
     }
@@ -35,5 +37,9 @@ class ChatBotDataSource @Inject constructor(
         storageRef.putFile(Uri.parse(audioUri)).await()
         val downloadUrl = storageRef.downloadUrl.await()
         return downloadUrl.toString()
+    }
+
+    private fun BotAnswerDto.toBotAnswer(): ChatBotResponse {
+        return ChatBotResponse(this.answer ?: "error connecting", this.audioUrl)
     }
 }

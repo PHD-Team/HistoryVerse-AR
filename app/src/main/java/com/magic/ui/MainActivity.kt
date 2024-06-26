@@ -5,10 +5,11 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.commit
-import com.magic.ui.fragments.chatBot.ChatBotFragment
+import com.magic.ui.localization.LocalizationFragment
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.sceneview.utils.doOnApplyWindowInsets
 import io.github.sceneview.utils.setFullScreen
+
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         sharedPref.edit().putInt("order", 1).apply()
 
         supportFragmentManager.commit {
-            add(R.id.containerFragment, ChatBotFragment::class.java, Bundle())
+            add(R.id.containerFragment, LocalizationFragment    ::class.java, Bundle())
         }
     }
 

@@ -1,6 +1,7 @@
 package com.magic.data.repositories
 
 import com.magic.data.dataSources.ChatBotDataSource
+import com.magic.data.models.ChatBotResponse
 import com.magic.data.models.ChatBotStartConvoBody
 import com.magic.data.models.ChatBotVoiceBody
 import javax.inject.Inject
@@ -9,21 +10,24 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatBotDataSource: ChatBotDataSource
 ) : ChatRepository {
 
-    override suspend fun sendTextToBot(messageBody: ChatBotStartConvoBody): String {
+    override suspend fun sendTextToBot(messageBody: ChatBotStartConvoBody): ChatBotResponse {
         return try {
-            chatBotDataSource.sendTextToBot_startConvo(messageBody)
+            val response = chatBotDataSource.sendTextToBot_startConvo(messageBody)
+            response ?: ChatBotResponse("error connecting", null)
         } catch (e: Exception) {
-            "error connecting"
+            ChatBotResponse("error connecting", null)
         }
     }
 
-    override suspend fun sendVoiceToBot(messageBody: ChatBotVoiceBody): String {
+    override suspend fun sendVoiceToBot(messageBody: ChatBotVoiceBody): ChatBotResponse {
 
         return try {
-
-            chatBotDataSource.sendVoiceToBot_startConvo(messageBody)
+            val response =
+                chatBotDataSource.sendVoiceToBot_startConvo(messageBody)
+            response ?: ChatBotResponse("error connecting", null)
         } catch (exception: Exception) {
-            exception.localizedMessage?.toString().toString()
+
+            ChatBotResponse(exception.localizedMessage?.toString().toString(), null)
         }
     }
 

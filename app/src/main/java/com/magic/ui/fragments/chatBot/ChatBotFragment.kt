@@ -1,13 +1,12 @@
 package com.magic.ui.fragments.chatBot
 
 import android.Manifest
-import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.pm.PackageManager
+import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,7 +24,6 @@ import com.magic.ui.databinding.FragmentChatBotBinding
 import com.magic.ui.localization.LocalizationFragment
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -38,6 +36,7 @@ class ChatBotFragment @Inject constructor() : Fragment() {
     private lateinit var chatAdapter: ChatAdapter
     private var mediaRecorder: MediaRecorder? = null
     private var audioFile: File? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,6 +52,16 @@ class ChatBotFragment @Inject constructor() : Fragment() {
         requestPermissions()
 
         chatAdapter = ChatAdapter(viewModel.state.value.messages.toMutableList())
+
+        chatAdapter.setonItemClickListener(
+            object : ChatAdapter.onPlayAudioClickListerner {
+                override fun onPlayAudioClick(position: Int) {
+                    val voiceUrl = viewModel.state.value.messages[position].voiceUrl
+                    if (voiceUrl != null)
+                        onAudioPress(voiceUrl)
+                }
+            }
+        )
         setUpRecycler()
         binding.editGchatMessage.doOnTextChanged { text, start, before, count ->
             if (!text.isNullOrEmpty()) {
@@ -83,6 +92,8 @@ class ChatBotFragment @Inject constructor() : Fragment() {
                 } else {
                     binding.progressBar.isGone = true
                 }
+//                if (uiState.isSuccess)
+//                    playAudio(uiState.messageText)
 
                 if (binding.recyclerView.adapter?.itemCount!! < viewModel.state.value.messages.size) {
                     addMessage()
@@ -112,25 +123,52 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             }
         }
 
+        playAudio("https://firebasestorage.googleapis.com/v0/b/historyversechatbot.appspot.com/o/speak_audio_file%2F11755b74-f1d0-4581-b1fa-30d24891206c.mp3?alt=media")
         binding.exitButton.setOnClickListener {
             navigateToLocalizationFragment()
         }
     }
 
-    private fun navigateToLocalizationFragment() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            val sharedPref = requireActivity().getSharedPreferences(
-                "path",
-                Context.MODE_PRIVATE
-            )
-            sharedPref.edit().putInt("order", sharedPref.getInt("order", 1) + 1).apply()
-            val fragment = LocalizationFragment()
-            parentFragmentManager.beginTransaction().apply {
-                replace(R.id.containerFragment, fragment)
-                addToBackStack(null)
-                commit()
+    private fun onAudioPress(url: String) {
+        if (mediaPlayer == null) {
+            playAudio(url)
+        } else {
+            stopPlayingAudio()
+        }
+    }
+
+    private fun stopPlayingAudio() {
+        mediaPlayer?.apply {
+            if (isPlaying) {
+                stop()
+                release()
             }
         }
+        mediaPlayer = null
+    }
+
+    private fun playAudio(url: String) {
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(url)
+            setOnPreparedListener { start() }
+            setOnCompletionListener { release() }
+            prepareAsync()
+        }
+    }
+
+    private fun navigateToLocalizationFragment() {
+        val sharedPref = requireActivity().getSharedPreferences(
+            "path",
+            MODE_PRIVATE
+        )
+        sharedPref.edit().putInt("order", sharedPref.getInt("order", 1) + 1).apply()
+        val fragment = LocalizationFragment()
+        parentFragmentManager.beginTransaction().apply {
+            replace(R.id.containerFragment, LocalizationFragment())
+            addToBackStack(null)
+            commit()
+        }
+
     }
 
     private fun addMessage() {

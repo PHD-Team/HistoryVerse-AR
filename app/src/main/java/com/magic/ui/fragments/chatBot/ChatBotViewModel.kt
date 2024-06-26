@@ -2,7 +2,6 @@ package com.magic.ui.fragments.chatBot
 
 import android.net.Uri
 import android.util.Log
-import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.magic.data.models.ChatBotStartConvoBody
@@ -13,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
@@ -30,7 +28,7 @@ class ChatBotViewModel @Inject constructor(
                     it.copy(
                         messages = it.messages + ChatMessage(
                             message = it.messageText,
-                            isSentByUser = true
+                            isSentByUser = true,
                         ),
                         messageText = "",
                         isLoading = true
@@ -40,14 +38,15 @@ class ChatBotViewModel @Inject constructor(
                     chatRepository.sendTextToBot(
                         ChatBotStartConvoBody(
                             query = state.value.messages.last().message,
-                            speak = false,
+                            speak = true,
                             statue_name = state.value.statueName
                         ),
                     ).also { response ->
                         _state.update {
                             it.copy(
                                 messages = it.messages + ChatMessage(
-                                    response, false,
+                                    response.answer, false,
+                                    voiceUrl = response.voiceUrl
                                 ),
                                 isSuccess = true,
                                 isLoading = false
@@ -93,12 +92,16 @@ class ChatBotViewModel @Inject constructor(
                 chatRepository.sendVoiceToBot(
                     ChatBotVoiceBody(
                         response,
-                        false
+                        true
                     )
-                ).also { answer ->
+                ).also { chatResponse ->
                     _state.update {
                         it.copy(
-                            messages = it.messages + ChatMessage(answer, false),
+                            messages = it.messages + ChatMessage(
+                                chatResponse.answer,
+                                false,
+                                voiceUrl = chatResponse.voiceUrl
+                            ),
                             isLoading = false
                         )
                     }
@@ -127,7 +130,7 @@ class ChatBotViewModel @Inject constructor(
                 )
             )
 
-            Log.d("start chat", response)
+            Log.d("start chat", response.answer)
         }
     }
 }

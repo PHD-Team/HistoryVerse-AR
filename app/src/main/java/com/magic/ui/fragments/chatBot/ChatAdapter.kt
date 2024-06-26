@@ -3,12 +3,24 @@ package com.magic.ui.fragments.chatBot
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.magic.ui.R
 
-class ChatAdapter(private var chatMessages: MutableList<ChatMessage>) :
+class ChatAdapter(
+    private var chatMessages: MutableList<ChatMessage>,
+) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private lateinit var listener: onPlayAudioClickListerner
+
+    interface onPlayAudioClickListerner {
+        fun onPlayAudioClick(position: Int)
+    }
+
+    fun setonItemClickListener(listener: onPlayAudioClickListerner) {
+        this.listener = listener
+    }
 
     companion object {
         private const val VIEW_TYPE_USER_MESSAGE = 1
@@ -41,7 +53,7 @@ class ChatAdapter(private var chatMessages: MutableList<ChatMessage>) :
 
             else -> {
                 val view = inflater.inflate(R.layout.item_chat_message_bot, parent, false)
-                BotMessageViewHolder(view)
+                BotMessageViewHolder(view, listener)
             }
         }
     }
@@ -87,8 +99,16 @@ class ChatAdapter(private var chatMessages: MutableList<ChatMessage>) :
         }
     }
 
-    class BotMessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class BotMessageViewHolder(itemView: View, listener: onPlayAudioClickListerner) :
+        RecyclerView.ViewHolder(itemView) {
         private val messageTextView: TextView = itemView.findViewById(R.id.botMessageTextView)
+        private val audioButton: ImageView = itemView.findViewById(R.id.playAudioImageView)
+
+        init {
+            audioButton.setOnClickListener {
+                listener.onPlayAudioClick(adapterPosition)
+            }
+        }
 
         fun bind(chatMessage: ChatMessage) {
             messageTextView.text = chatMessage.message

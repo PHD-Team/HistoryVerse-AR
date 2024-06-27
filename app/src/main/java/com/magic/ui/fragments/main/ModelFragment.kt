@@ -34,31 +34,31 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 
 class ModelFragment : Fragment(R.layout.fragment_model) {
-    private var _binding : FragmentModelBinding? = null
+    private var _binding: FragmentModelBinding? = null
     private val repository = MuseMagicRepositoryImpl()
-    private lateinit var sceneView : ArSceneView
-    private lateinit var cloudAnchorNode : ArModelNode
+    private lateinit var sceneView: ArSceneView
+    private lateinit var cloudAnchorNode: ArModelNode
     private val firstKitAudio = MediaPlayer()
     private val welcomeAudio = MediaPlayer()
-    private lateinit var anchorId : String
+    private lateinit var anchorId: String
     private var isLoading = false
         set(value) {
             field = value
-            binding.loadingView.isGone = ! value
+            binding.loadingView.isGone = !value
         }
-    private val binding get() = _binding !!
+    private val binding get() = _binding!!
 
     override fun onCreateView(
-        inflater : LayoutInflater , container : ViewGroup? ,
-        savedInstanceState : Bundle?
-    ) : View? {
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         // Inflate the layout for this fragment using view binding
-        _binding = FragmentModelBinding.inflate(inflater , container , false)
+        _binding = FragmentModelBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view : View , savedInstanceState : Bundle?) {
-        super.onViewCreated(view , savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val topGuideline = view.findViewById<Guideline>(R.id.topGuideline)
         topGuideline.doOnApplyWindowInsets { systemBarsInsets ->
             // Add the action bar margin
@@ -79,7 +79,7 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
 
         lifecycleScope.launch(Dispatchers.Main) {
             delay(1000)
-            playAudio(R.raw.welcome , welcomeAudio)
+            playAudio(R.raw.welcome, welcomeAudio)
             delay(2000)
             binding.resolveButton.isVisible = true
             delay(1000)
@@ -87,14 +87,14 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
         }
         cloudAnchorNode =
             ArModelNode(
-                engine = sceneView.engine ,
+                engine = sceneView.engine,
                 placementMode = PlacementMode.PLANE_HORIZONTAL
             ).apply {
                 parent = sceneView
                 isSmoothPoseEnable = false
                 isVisible = false
                 loadModelGlbAsync(
-                    glbFileLocation = "mainModelTempProjects.glb" ,
+                    glbFileLocation = "mainModelTempProjects.glb",
                     scaleToUnits = 0.7f
                 ) {
                     isLoading = false
@@ -113,9 +113,9 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
         _binding = null
     }
 
-    private fun playAudio(resourceId : Int , mediaPlayer : MediaPlayer) {
+    private fun playAudio(resourceId: Int, mediaPlayer: MediaPlayer) {
         mediaPlayer.setDataSource(
-            requireContext() ,
+            requireContext(),
             Uri.parse("android.resource://com.magic.ui/$resourceId")
         )
         mediaPlayer.prepare()
@@ -136,20 +136,19 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
 
     }
 
-    private suspend fun resolveAnchor() {
-//        ua-a6541ae534a65caf30a9b29a5f62cd0d
-        cloudAnchorNode.resolveCloudAnchor("ua-9b05682fa57d84a55701ab692e4da25d") { anchor : Anchor , success : Boolean ->
+    private suspend fun resolveAnchor(){
+        cloudAnchorNode.resolveCloudAnchor(anchorId) { anchor: Anchor, success: Boolean ->
             if (success) {
                 cloudAnchorNode.isVisible = true
                 lifecycleScope.launch(Dispatchers.Main) {
                     binding.resolveButton.isVisible = false
                     delay(1000)
-                    playAudio(R.raw.first , firstKitAudio)
+                    playAudio(R.raw.first, firstKitAudio)
                 }
             } else {
-                Toast.makeText(context , R.string.error_occurred , Toast.LENGTH_LONG).show()
+                Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()
                 Log.d(
-                    "ResolveBotFragment" ,
+                    "ResolveBotFragment",
                     "Unable to resolve the Cloud Anchor. The Cloud Anchor state is ${anchor.cloudAnchorState}"
                 )
             }
@@ -165,9 +164,9 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
             isLoading = true
             val data = repository.getAnchorList()
             isLoading = data.isEmpty()
-            anchorId = data[1].anchor !!
+            anchorId = data[1].anchor!!
             binding.editText.setText(data[1].anchor)
-            Toast.makeText(requireContext() , data[1].anchor , Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), data[1].anchor, Toast.LENGTH_LONG).show()
         }
     }
 

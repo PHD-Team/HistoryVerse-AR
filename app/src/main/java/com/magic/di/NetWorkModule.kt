@@ -10,6 +10,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
 
@@ -24,6 +25,7 @@ object NetWorkModule {
     ): OkHttpClient =
         OkHttpClient
             .Builder()
+            .connectTimeout(20, TimeUnit.MINUTES)
             .addInterceptor(loggingInterceptor)
             .build()
 
@@ -53,7 +55,7 @@ object NetWorkModule {
     @Singleton
     @Provides
     @Named("baseUrl")
-    fun provideBaseUrl(): String = "https://b4d8-197-48-204-224.ngrok-free.app/"
+    fun provideBaseUrl(): String = "https://f1dc-102-41-52-217.ngrok-free.app/"
 
     @Singleton
     @Provides

@@ -73,16 +73,18 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             }
         }
         val sharedPref = requireActivity().getSharedPreferences("path", MODE_PRIVATE)
-        val order = sharedPref.getInt("order", 1)
+        val order = sharedPref.getInt("order", 1).also {
 
-        viewModel.updateStatueName(
-            when (order) {
-                1 -> "alexander the great"
-                2 -> "nefertiti"
-                3 -> "Tutankhamun"
-                else -> "alexander the great"
-            }
-        )
+            viewModel.updateStatueName(
+                when (it) {
+                    1 -> "alexander the great"
+                    2 -> "nefertiti"
+                    3 -> "Tutankhamun"
+                    else -> "alexander the great"
+                }
+            )
+        }
+
 
         lifecycleScope.launch {
             viewModel.state
@@ -130,6 +132,7 @@ class ChatBotFragment @Inject constructor() : Fragment() {
     }
 
     private fun onAudioPress(url: String) {
+
         if (mediaPlayer == null) {
             playAudio(url)
         } else {
@@ -140,11 +143,14 @@ class ChatBotFragment @Inject constructor() : Fragment() {
     private fun stopPlayingAudio() {
         mediaPlayer?.apply {
             if (isPlaying) {
-                stop()
-                release()
+//                stop()
+//                release()
+                pause()
+            } else {
+                start()
             }
         }
-        mediaPlayer = null
+//        mediaPlayer = null
     }
 
     private fun playAudio(url: String) {

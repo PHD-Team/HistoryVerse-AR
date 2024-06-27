@@ -79,7 +79,7 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
 
         lifecycleScope.launch(Dispatchers.Main) {
             delay(1000)
-            playAudio(R.raw.welcome, welcomeAudio)
+            playAudio(R.raw.nefirtari, welcomeAudio)
             delay(2000)
             binding.resolveButton.isVisible = true
             delay(1000)
@@ -143,7 +143,7 @@ class ModelFragment : Fragment(R.layout.fragment_model) {
                 lifecycleScope.launch(Dispatchers.Main) {
                     binding.resolveButton.isVisible = false
                     delay(1000)
-                    playAudio(R.raw.first, firstKitAudio)
+                    playAudio(R.raw.nefirtari, firstKitAudio)
                 }
             } else {
                 Toast.makeText(context, R.string.error_occurred, Toast.LENGTH_LONG).show()

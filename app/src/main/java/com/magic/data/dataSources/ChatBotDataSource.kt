@@ -5,6 +5,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.magic.data.models.BotAnswerDto
 import com.magic.data.models.ChatBotResponse
 import com.magic.data.models.ChatBotStartConvoBody
+import com.magic.data.models.ChatBotTextBody
 import com.magic.data.models.ChatBotVoiceBody
 import com.magic.data.network.ChatBotService
 import kotlinx.coroutines.tasks.await
@@ -17,7 +18,13 @@ class ChatBotDataSource @Inject constructor(
 ) {
 
     suspend fun sendTextToBot_startConvo(requestBody: ChatBotStartConvoBody): ChatBotResponse? {
+        val request = service.sendTextStartToBot(requestBody)
+        return if (request.isSuccessful)
+            request.body()?.toBotAnswer()
+        else throw Exception(request.message())
+    }
 
+    suspend fun sendTexToBot(requestBody: ChatBotTextBody): ChatBotResponse? {
         val request = service.sendTextToBot(requestBody)
         return if (request.isSuccessful)
             request.body()?.toBotAnswer()

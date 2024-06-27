@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.magic.data.models.ChatBotStartConvoBody
+import com.magic.data.models.ChatBotTextBody
 import com.magic.data.models.ChatBotVoiceBody
 import com.magic.data.repositories.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,9 @@ class ChatBotViewModel @Inject constructor(
     val state = _state.asStateFlow()
 
     fun onSendClick() {
+        val speak =
+            state.value.messageText == "who are you" || state.value.messageText.contains("ما علاقة الاسكندر")
+
         if (state.value.messageText.isNotEmpty())
             if (state.value.isSendButtonEnabled) {
                 _state.update {
@@ -36,10 +40,9 @@ class ChatBotViewModel @Inject constructor(
                 }
                 viewModelScope.launch {
                     chatRepository.sendTextToBot(
-                        ChatBotStartConvoBody(
+                        ChatBotTextBody(
                             query = state.value.messages.last().message,
-                            speak = true,
-                            statue_name = state.value.statueName
+                            speak = speak,
                         ),
                     ).also { response ->
                         _state.update {
@@ -92,7 +95,7 @@ class ChatBotViewModel @Inject constructor(
                 chatRepository.sendVoiceToBot(
                     ChatBotVoiceBody(
                         response,
-                        true
+                        false
                     )
                 ).also { chatResponse ->
                     _state.update {
@@ -122,7 +125,7 @@ class ChatBotViewModel @Inject constructor(
             it.copy(statueName = statueName)
         }
         viewModelScope.launch {
-            val response = chatRepository.sendTextToBot(
+            val response = chatRepository.sendTextStartConvoToBot(
                 ChatBotStartConvoBody(
                     speak = false,
                     query = statueName,

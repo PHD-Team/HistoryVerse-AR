@@ -23,7 +23,6 @@ import com.magic.ui.R
 import com.magic.ui.databinding.FragmentChatBotBinding
 import com.magic.ui.localization.LocalizationFragment
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import javax.inject.Inject
@@ -57,8 +56,9 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             object : ChatAdapter.onPlayAudioClickListerner {
                 override fun onPlayAudioClick(position: Int) {
                     val voiceUrl = viewModel.state.value.messages[position].voiceUrl
-                    if (voiceUrl != null)
+                    if (voiceUrl != null) {
                         onAudioPress(voiceUrl)
+                    }
                 }
             }
         )
@@ -123,7 +123,7 @@ class ChatBotFragment @Inject constructor() : Fragment() {
             }
         }
 
-        playAudio("https://firebasestorage.googleapis.com/v0/b/historyversechatbot.appspot.com/o/speak_audio_file%2F11755b74-f1d0-4581-b1fa-30d24891206c.mp3?alt=media")
+//        playAudio("https://firebasestorage.googleapis.com/v0/b/historyversechatbot.appspot.com/o/speak_audio_file%2F11755b74-f1d0-4581-b1fa-30d24891206c.mp3?alt=media")
         binding.exitButton.setOnClickListener {
             navigateToLocalizationFragment()
         }
@@ -151,7 +151,10 @@ class ChatBotFragment @Inject constructor() : Fragment() {
         mediaPlayer = MediaPlayer().apply {
             setDataSource(url)
             setOnPreparedListener { start() }
-            setOnCompletionListener { release() }
+            setOnCompletionListener {
+                release()
+                mediaPlayer = null
+            }
             prepareAsync()
         }
     }

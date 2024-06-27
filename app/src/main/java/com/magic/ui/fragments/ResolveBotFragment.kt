@@ -5,13 +5,13 @@ import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
@@ -19,7 +19,6 @@ import com.magic.data.repositories.MuseMagicRepositoryImpl
 import com.magic.ui.R
 import com.magic.ui.databinding.FragmentResolveBotBinding
 import com.magic.ui.fragments.chatBot.ChatBotFragment
-import com.magic.ui.localization.LocalizationFragment
 import io.github.sceneview.ar.ArSceneView
 import io.github.sceneview.ar.node.ArModelNode
 import io.github.sceneview.math.Position
@@ -116,13 +115,13 @@ class ResolveBotFragment : Fragment() {
             }
             joinAll(getAnchorId)
             launch(Dispatchers.Main) {
-                resolveAnchor()
+                resolveAnchor(order)
             }
         }
 
     }
 
-    private suspend fun resolveAnchor() {
+    private suspend fun resolveAnchor(order: Int) {
         cloudAnchorNode =
             ArModelNode(
                 engine = sceneView.engine,
@@ -136,7 +135,7 @@ class ResolveBotFragment : Fragment() {
                 ) {
                     isVisible = true
                     isLoading = false
-                    position = Position(0f,  3f, 0f)
+                    position = Position(0f, 3f, 0f)
                 }
             }.apply {
 
@@ -146,7 +145,10 @@ class ResolveBotFragment : Fragment() {
                         lifecycleScope.launch(Dispatchers.Main) {
                             binding.resolveButton.isVisible = false
                             delay(1000)
-                            playAudio(R.raw.alexander, firstKitAudio)
+                            if (order == 1)
+                                playAudio(R.raw.first, firstKitAudio)
+                            else
+                                playAudio(R.raw.nefirtari, secondKitAudio)
                             isResolved = true
 
                         }
@@ -180,7 +182,7 @@ class ResolveBotFragment : Fragment() {
     }
 
 
-    private suspend fun getAnchorId(order:Int) {
+    private suspend fun getAnchorId(order: Int) {
         lifecycleScope.launch {
             isLoading = true
             val data = repository.getAnchorList()
